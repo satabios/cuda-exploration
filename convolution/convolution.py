@@ -85,15 +85,8 @@ def pytorch_maxpool2d(input_data, kernel_size, stride=0, padding=0):
     output_data = torch.zeros(batch_size, channels, kernel_height, kernel_width)
     # Reoder the for loops depending on Row-Major or Columns-Major Memory Access
     for row in range(kernel_height):
-        for column in range(kernel_width):
-            # Define the pooling region
-            start_row = row * stride
-            start_column = column * stride
-            end_row = start_row + kernel_size
-            end_column = start_column + kernel_size
-            
-            # Apply max pooling over the region
-            output_data[:, :, row, column] = torch.amax(input_data[:, :, start_row:end_row, start_column:end_column], dim=(2, 3))
+        for col in range(kernel_width):
+                output_data[:, :, row, col] = torch.amax(input_data[:, :, row*stride:row*stride+kernel_size, col*stride:col*stride+kernel_size], dim=(2, 3))
     
     return output_data
 torch.manual_seed(4123)
