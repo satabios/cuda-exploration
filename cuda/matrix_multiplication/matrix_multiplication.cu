@@ -35,13 +35,9 @@ __global__ void matrixMultiplyTiledKernel(float *a, float *b, float *c, int rows
     // Loop over the tiles of the input matrices
     for (int tileIdx = 0; tileIdx < (colsA + TILE_SIZE - 1) / TILE_SIZE; ++tileIdx) {
         // Load elements into shared memory
-        tileA[threadIdx.y][threadIdx.x] = (row < rowsA && tileIdx * TILE_SIZE + threadIdx.x < colsA) 
-                                          ? a[row * colsA + tileIdx * TILE_SIZE + threadIdx.x] 
-                                          : 0.0f;
+        tileA[threadIdx.y][threadIdx.x] = (row < rowsA && tileIdx * TILE_SIZE + threadIdx.x < colsA) ? a[row * colsA + tileIdx * TILE_SIZE + threadIdx.x] : 0.0f;
         
-        tileB[threadIdx.y][threadIdx.x] = (col < colsB && tileIdx * TILE_SIZE + threadIdx.y < colsA) 
-                                          ? b[(tileIdx * TILE_SIZE + threadIdx.y) * colsB + col] 
-                                          : 0.0f;
+        tileB[threadIdx.y][threadIdx.x] = (col < colsB && tileIdx * TILE_SIZE + threadIdx.y < colsA) ? b[(tileIdx * TILE_SIZE + threadIdx.y) * colsB + col] : 0.0f;
 
         __syncthreads();  // Ensure all threads have loaded their elements
 
