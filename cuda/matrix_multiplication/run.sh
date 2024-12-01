@@ -1,6 +1,9 @@
 #!/bin/bash
 
-read -p "Enter File Name: " file_name
+file_name="main"  # No spaces around the '='
+if [ -f "$file_name" ]; then 
+  rm $file_name 
+fi
 nvcc -arch=sm_80 $file_name.cu -o $file_name
 echo "----------Output----------"
 ./$file_name
