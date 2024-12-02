@@ -19,17 +19,18 @@ __global__ void tiledCoarseMatrixMultiply(float *A, float *B, float *C) {
         unsigned int bcol = Gcol; 
         unsigned int brow = tileIdx * TILE_SIZE + threadIdx.x;
 
-        if (arow < ROWS_A && acol < COLS_A) {
-            SharedA[threadIdx.x][threadIdx.y] = A[arow * COLS_A + acol];
-        } else {
-            SharedA[threadIdx.x][threadIdx.y] = 0.0f;
-        }
-        // For One Tile of A Load all the Tiles of B
-        for( unsigned coarse_idx = 0; coarse_idx < COARSE_FACTOR; coarse_idx++) {
-            if (brow < ROWS_B && bcol < COLS_B) {
+
+        if (brow < ROWS_B && bcol < COLS_B) {
                 SharedB[threadIdx.x][threadIdx.y] = B[brow * COLS_B + bcol];
             } else {
                 SharedB[threadIdx.x][threadIdx.y] = 0.0f;
+            }
+        // For One Tile of B Load all the Tiles of A
+        for( unsigned coarse_idx = 0; coarse_idx < COARSE_FACTOR; coarse_idx++) {
+            if (arow < ROWS_A && acol < COLS_A) {
+                SharedA[threadIdx.x][threadIdx.y] = A[arow * COLS_A + acol];
+            } else {
+                SharedA[threadIdx.x][threadIdx.y] = 0.0f;
             }
 
             __syncthreads();
