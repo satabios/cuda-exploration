@@ -4,4 +4,5 @@
 #define COLS_A 1024*2
 #define ROWS_B 1024*2
 #define COLS_B 512
+#define COARSE_FACTOR 4
 #define ELEMENT_WISE false
