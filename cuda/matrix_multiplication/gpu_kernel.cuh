@@ -113,7 +113,7 @@ void tiled_kernel(float *d_A, float *d_B, float *d_C) {
     dim3 threadsPerBlock(TILE_SIZE, TILE_SIZE);
     dim3 blocksPerGrid(ceil(ROWS_A / TILE_SIZE), ceil(COLS_B / TILE_SIZE));
 
-     cudaEvent_t start, stop;
+    cudaEvent_t start, stop;
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
     cudaEventRecord(start);
