@@ -3,26 +3,21 @@
 #define BLOCK_DIM 4
 #define GRID_DIM 2
 
+
 __global__ void reduce_kernel(float* input, float* partialSums, unsigned int N) {
-    unsigned int tid = threadIdx.x;
-    unsigned int i = blockIdx.x * blockDim.x * 2 + tid;
+    unsigned int segment = ( blockIdx.x*blockDim.x+ threadIdx.x )*2;
 
-    printf("Block %d, thread %d, i %d, Input:%f \n ", blockIdx.x, tid, i, input[i]);
-
-
-    // Each thread performs a reduction within a block
-    for (unsigned int stride = 1; stride <= blockDim.x; stride *= 2) {
-        if (tid % (2 * stride) == 0 && i + stride < N) {
-            input[i] += input[i + stride];
-        }
-        __syncthreads(); // Synchronize threads within the block
+    // Perform reduction within the block
+    for(unsigned int stride = 1; stride <= BLOCK_DIM; stride *= 2) {
+        if(threadIdx.x%stride == 0) {
+            input[segment] += input[segment + stride]; }
+    __syncthreads() ;
     }
-
-    // Write the reduced value to partial sums
-    if (tid == 0) {
-        partialSums[blockIdx.x] = input[i];
+    if(threadIdx.x == 0) {
+    partialSums[blockIdx.x] = input[segment];
     }
 }
+
 
 int main() {
     const unsigned int N = 4 * 4;  // Size of input array
