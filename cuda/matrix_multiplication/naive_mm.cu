@@ -10,6 +10,11 @@
 #define COLS_B 1024
 #define ELEMENT_WISE false
 
+
+#define sizeA (sizeof(float) * (ROWS_A * COLS_A))
+#define sizeB (sizeof(float) * (ROWS_B * COLS_B))
+#define sizeC (sizeof(float) * (ROWS_A * COLS_B))
+
 __global__ void naiveMatrixMultiply(float *A, float *B, float *C) {
     unsigned int Gcol = blockDim.y * blockIdx.y + threadIdx.y;
     unsigned int Grow = blockDim.x * blockIdx.x + threadIdx.x;
@@ -23,43 +28,10 @@ __global__ void naiveMatrixMultiply(float *A, float *B, float *C) {
     }
 }
 
-void naive_kernel(float *d_A, float *d_B, float *d_C) {
-    dim3 threadsPerBlock(BLOCK_SIZE, BLOCK_SIZE);
-    dim3 blocksPerGrid(ceil(ROWS_A / BLOCK_SIZE), ceil(COLS_B / BLOCK_SIZE));
-
-    cudaEvent_t start, stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
-    cudaEventRecord(start);
-
-    naiveMatrixMultiply<<<blocksPerGrid, threadsPerBlock>>>(d_A, d_B, d_C);
-
-    cudaEventRecord(stop);
-    cudaEventSynchronize(stop);
-    float milliseconds = 0;
-    cudaEventElapsedTime(&milliseconds, start, stop);
-    std::cout << " \t\t\t\t Naive Kernel Execution Time: " << milliseconds << "ms" << std::endl;
-}
-
-int main(){
-
-    size_t sizeA = sizeof(float) * (ROWS_A * COLS_A);
-    size_t sizeB = sizeof(float) * (ROWS_B * COLS_B);
-    size_t sizeC = sizeof(float) * (ROWS_A * COLS_B);
-
-    float *h_A = (float *)malloc(sizeA);
-    float *h_B = (float *)malloc(sizeB);
-    float *h_C = (float *)malloc(sizeC);
-    float *h_C_ref = (float *)malloc(sizeC);
-
-    for (int idx = 0; idx < ROWS_A * COLS_A; idx++) h_A[idx] = idx % 100;
-    for (int idx = 0; idx < ROWS_B * COLS_B; idx++) h_B[idx] = idx % 100;
-
-    MatrixMulCPU(h_A, h_B, h_C_ref, ROWS_A, COLS_A, COLS_B);
+void naive_kernel(float *h_A, float *h_B, float *h_C) {
 
     float *d_A, *d_B, *d_C;
 
-    // GPU memory allocation timing
     cudaEvent_t start, stop;
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
@@ -76,7 +48,6 @@ int main(){
     cudaEventElapsedTime(&milliseconds, start, stop);
     std::cout << "\t\t\t\t GPU Memory Allocation Time: " << milliseconds << "ms" << std::endl;
 
-    // Host to device memory transfer timing
     cudaEventRecord(start);
     cudaMemcpy(d_A, h_A, sizeA, cudaMemcpyHostToDevice);
     cudaMemcpy(d_B, h_B, sizeB, cudaMemcpyHostToDevice);
@@ -86,10 +57,21 @@ int main(){
     cudaEventElapsedTime(&milliseconds, start, stop);
     std::cout << "\t\t\t\t Host to Device Transfer Time: " << milliseconds << "ms" << std::endl;
 
-    MatrixMulCPU(h_A, h_B, h_C_ref, ROWS_A, COLS_A, COLS_B);
-    naive_kernel(d_A, d_B, d_C);
+    dim3 threadsPerBlock(BLOCK_SIZE, BLOCK_SIZE);
+    dim3 blocksPerGrid(ceil(ROWS_A / BLOCK_SIZE), ceil(COLS_B / BLOCK_SIZE));
 
-    // Device to host memory transfer timing
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    cudaEventRecord(start);
+
+    naiveMatrixMultiply<<<blocksPerGrid, threadsPerBlock>>>(d_A, d_B, d_C);
+
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+    milliseconds = 0;
+    cudaEventElapsedTime(&milliseconds, start, stop);
+    std::cout << " \t\t\t\t Naive Kernel Execution Time: " << milliseconds << "ms" << std::endl;
+
     cudaEventRecord(start);
     cudaMemcpy(h_C, d_C, sizeC, cudaMemcpyDeviceToHost);
     cudaDeviceSynchronize();
@@ -98,19 +80,35 @@ int main(){
     cudaEventElapsedTime(&milliseconds, start, stop);
     std::cout << "\t\t\t\t Device to Host Transfer Time: " << milliseconds << "ms" << std::endl;
 
+    cudaFree(d_A);
+    cudaFree(d_B);
+    cudaFree(d_C);
+
+
+    cudaEventDestroy(start);
+    cudaEventDestroy(stop);
+}
+
+int main(){
+
+    float *h_A = (float *)malloc(sizeA);
+    float *h_B = (float *)malloc(sizeB);
+    float *h_C = (float *)malloc(sizeC);
+    float *h_C_ref = (float *)malloc(sizeC);
+
+    for (int idx = 0; idx < ROWS_A * COLS_A; idx++) h_A[idx] = idx % 100;
+    for (int idx = 0; idx < ROWS_B * COLS_B; idx++) h_B[idx] = idx % 100;
+
+    MatrixMulCPU(h_A, h_B, h_C_ref, ROWS_A, COLS_A, COLS_B);
+
+    naive_kernel(h_A, h_B, h_C);
+
     testResult(h_C, h_C_ref, ROWS_A, COLS_B, ELEMENT_WISE, "Naive Kernel");
 
 
     free(h_A);
     free(h_B);
     free(h_C);
-
-
-
-    cudaFree(d_A);
-    cudaFree(d_B);
-    cudaFree(d_C);
-
 
     return 0;
 

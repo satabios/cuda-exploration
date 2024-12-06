@@ -5,7 +5,7 @@
 #include "cuda_common.cuh"
 
 #define COARSE_FACTOR 4     
-#define TILE_SIZE 128
+#define TILE_SIZE 128   
 #define ROWS_A 1024
 #define COLS_A 1024
 #define ROWS_B 1024
@@ -18,12 +18,16 @@
 #define sizeC (sizeof(float) * (ROWS_A * COLS_B))
 
 
-__global__ void mm_tiled_kernel(float* A, float* B, float* C) {
+__global__ void coarsened_tiled_mm(float* A, float* B, float* C) {
     __shared__ float A_s[TILE_SIZE][TILE_SIZE];
     __shared__ float B_s[TILE_SIZE][TILE_SIZE];
 
+    // Accessing A row-wise and B column-wise
+    // Idea of Coarsening: Load a Coarse Factor amount of Tiles of B in Shared Memory,
+    // while loading "One Tile" of A in Shared Memory
     unsigned int row = blockIdx.y * blockDim.y + threadIdx.y;
     unsigned int colStart = blockIdx.x * blockDim.x * COARSE_FACTOR + threadIdx.x;
+    // colStart is the starting column index of the tile in B [0, COARSE_FACTOR, 2*COARSE_FACTOR, ...]
 
     float sum[COARSE_FACTOR];
 
@@ -31,8 +35,8 @@ __global__ void mm_tiled_kernel(float* A, float* B, float* C) {
         sum[c] = 0.0f;
     }
 
-    for(unsigned tile = 0; tile < COLS_A/TILE_SIZE; ++tile){
-
+    for(unsigned tile = 0; tile < (COLS_A+ TILE_SIZE-1)/TILE_SIZE; ++tile){ //Assuming COLS_A is larger than ROWS_A
+        // For every Tile of A, Load a Coarsed Factor of B
         A_s[threadIdx.y][threadIdx.x] = A[row * COLS_A + tile * TILE_SIZE + threadIdx.x];
 
         for(unsigned int c = 0; c < COARSE_FACTOR; ++c){
@@ -84,7 +88,7 @@ void coarsened_tiled_mm_gpu(float* A, float* B, float* C) {
                    (ROWS_A + TILE_SIZE - 1) / TILE_SIZE);
 
     cudaEventRecord(start);
-    mm_tiled_kernel<<<numBlocks, numThreadsPerBlock>>>(d_A, d_B, d_C);
+    coarsened_tiled_mm<<<numBlocks, numThreadsPerBlock>>>(d_A, d_B, d_C);
     cudaDeviceSynchronize(); 
     cudaEventRecord(stop);
     cudaEventSynchronize(stop);
