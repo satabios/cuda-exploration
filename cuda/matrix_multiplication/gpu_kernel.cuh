@@ -128,33 +128,3 @@ void tiled_kernel(float *d_A, float *d_B, float *d_C) {
     std::cout << " \t\t\t\t Tiled Kernel Execution Time: " << milliseconds << "ms" << std::endl;    
 }
 
-__global__ void naiveMatrixMultiply(float *A, float *B, float *C) {
-    unsigned int Gcol = blockDim.y * blockIdx.y + threadIdx.y;
-    unsigned int Grow = blockDim.x * blockIdx.x + threadIdx.x;
-
-    if (Grow < ROWS_A && Gcol < COLS_B) {
-        float sum = 0.0f;
-        for (int k = 0; k < COLS_A; k++) {
-            sum += A[Grow * COLS_A + k] * B[k * COLS_B + Gcol];
-        }
-        C[Grow * COLS_B + Gcol] = sum;
-    }
-}
-
-void naive_kernel(float *d_A, float *d_B, float *d_C) {
-    dim3 threadsPerBlock(TILE_SIZE, TILE_SIZE);
-    dim3 blocksPerGrid(ceil(ROWS_A / TILE_SIZE), ceil(COLS_B / TILE_SIZE));
-
-    cudaEvent_t start, stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
-    cudaEventRecord(start);
-
-    naiveMatrixMultiply<<<blocksPerGrid, threadsPerBlock>>>(d_A, d_B, d_C);
-
-    cudaEventRecord(stop);
-    cudaEventSynchronize(stop);
-    float milliseconds = 0;
-    cudaEventElapsedTime(&milliseconds, start, stop);
-    std::cout << " \t\t\t\t Naive Kernel Execution Time: " << milliseconds << "ms" << std::endl;
-}

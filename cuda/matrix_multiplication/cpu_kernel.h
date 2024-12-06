@@ -2,7 +2,7 @@
 #include "device_launch_parameters.h"
 
 
-void MatrixMulCPU(float *A, float *B, float *C){
+void MatrixMulCPU(float *A, float *B, float *C, int ROWS_A, int COLS_A, int COLS_B){
     for(int i = 0; i < ROWS_A; i++){
         for(int j = 0; j < COLS_B; j++){
             float sum = 0;

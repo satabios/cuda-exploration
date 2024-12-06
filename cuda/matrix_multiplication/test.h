@@ -1,10 +1,9 @@
 #include <cstdlib>
 #include <cmath>
 #include <iostream>
-#include "device_launch_parameters.h"
+#include <string>
 
-
-void testResult(const float* h_C, const float* C_ref, const std::string& kernelName) {
+void testResult(const float* h_C, const float* C_ref, int ROWS_A, int COLS_B, bool ELEMENT_WISE, const std::string& kernelName) {
   // Verify results
   std::cout <<"\n \t\t\t\t" << "_________ " << kernelName << " Result ___________ \n";
   bool testPassed = true;
