@@ -1,6 +1,4 @@
 NVCCFLAGS = -O3 -arch=sm_80
-MATRIX_SIZE = 1024
-RUNS = 5
 
 all: naive_mm tiled_mm coarsened_tiled_mm
 
@@ -22,3 +20,4 @@ run: all
 	./naive_mm
 	./tiled_mm
 	./coarsened_tiled_mm
+
